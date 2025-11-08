@@ -1,8 +1,9 @@
-name: Build Nova Aurora Roleplay APK
+name: Build AuroraLauncher APK
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -10,35 +11,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+      # 1️⃣ Fazer checkout do código
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-    - name: Configurar JDK
-      uses: actions/setup-java@v3
-      with:
-        distribution: temurin
-        java-version: 17
+      # 2️⃣ Instalar JDK 17
+      - name: Setup Java 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
 
-    - name: Instalar SDK Android
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y wget unzip
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
-        unzip cmdline-tools.zip -d $HOME/android-sdk
-        mkdir -p $HOME/android-sdk/cmdline-tools/latest
-        mv $HOME/android-sdk/cmdline-tools/* $HOME/android-sdk/cmdline-tools/latest/ || true
-        yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-        $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" "platforms;android-34" "platform-tools"
+      # 3️⃣ Baixar Android SDK e Build-tools
+      - name: Install Android SDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          mkdir -p $HOME/Android/Sdk/cmdline-tools
+          cd $HOME/Android/Sdk/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+          unzip cmdline-tools.zip
+          mv cmdline-tools latest
+          yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
-    - name: Compilar APK
-      env:
-        ANDROID_HOME: ${{ env.HOME }}/android-sdk
-      run: |
-        chmod +x gradlew
-        ./gradlew assembleRelease
+      # 4️⃣ Criar Gradle Wrapper compatível com projeto (Gradle 7.5)
+      - name: Setup Gradle Wrapper
+        run: |
+          ./gradlew wrapper --gradle-version 7.5
+          chmod +x gradlew
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: NovaAurora-APK
-        path: app/build/outputs/apk/release/app-release.apk
+      # 5️⃣ Limpar builds antigos
+      - name: Clean build
+        run: ./gradlew clean
+
+      # 6️⃣ Compilar APK release
+      - name: Assemble APK
+        run: ./gradlew assembleRelease
+
+      # 7️⃣ Subir APK como artefato
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AuroraLauncher-release
+          path: app/build/outputs/apk/release/app-release.apk
+

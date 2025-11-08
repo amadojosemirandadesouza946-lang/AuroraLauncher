@@ -22,10 +22,13 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 3️⃣ Baixar Android SDK e Build-tools
+      # 3️⃣ Instalar Gradle globalmente
+      - name: Install Gradle
+        run: sudo apt-get update && sudo apt-get install -y gradle
+
+      # 4️⃣ Baixar Android SDK e build-tools
       - name: Install Android SDK
         run: |
-          sudo apt-get update
           sudo apt-get install -y wget unzip
           mkdir -p $HOME/Android/Sdk/cmdline-tools
           cd $HOME/Android/Sdk/cmdline-tools
@@ -34,19 +37,13 @@ jobs:
           mv cmdline-tools latest
           yes | $HOME/Android/Sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/Android/Sdk "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
-      # 4️⃣ Criar Gradle Wrapper compatível com projeto (Gradle 7.5)
-      - name: Setup Gradle Wrapper
-        run: |
-          ./gradlew wrapper --gradle-version 7.5
-          chmod +x gradlew
-
       # 5️⃣ Limpar builds antigos
       - name: Clean build
-        run: ./gradlew clean
+        run: gradle clean
 
       # 6️⃣ Compilar APK release
       - name: Assemble APK
-        run: ./gradlew assembleRelease
+        run: gradle assembleRelease
 
       # 7️⃣ Subir APK como artefato
       - name: Upload APK
